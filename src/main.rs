@@ -36,7 +36,7 @@ impl eframe::App for MyApp {
                 });
             });    
 
-            ui.label("Drag-and-drop files onto the window!");
+            ui.label("Open from the File menu, or drag-and-drop the file here.");
 
             if let Some(picked_path) = &self.picked_path {
                 if self.success == false{
@@ -142,15 +142,5 @@ impl MyApp {
                 self.boxes_window.remove_hitbox();
             }
         });
-        ui.menu_button("SubMenu", |ui| {
-            let _ = ui.button("Item1");
-            let _ = ui.button("Item2");
-            let _ = ui.button("Item3");
-            let _ = ui.button("Item4");
-            if ui.button("Open...").clicked() {
-                ui.close_menu();
-            }
-        });
-        let _ = ui.button("Very long text for this item");
     }
 }

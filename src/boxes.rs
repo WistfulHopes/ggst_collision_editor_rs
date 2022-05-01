@@ -3,7 +3,8 @@ use std::{path::{PathBuf, Path}, env::temp_dir, fs::{File, self, create_dir_all}
 use arcsys::ggst::{pac::{GGSTPac, GGSTPacEntry}, jonbin::{GGSTJonBin, HitBox}};
 use eframe::{egui::{self, Response, ComboBox, Sense, Frame}, emath::{Rect, Pos2}, epaint::{Color32, Stroke}};
 use serde::{Serialize, Deserialize};
-use std::collections::BTreeMap;
+use serde_json;
+use std::collections::{BTreeMap};
 use anyhow::Result as AResult;
 
 use crate::open::open_file;
@@ -43,6 +44,10 @@ pub struct BoxesWindow {
     current_box: Option<HitBox>,
     box_info: Box,
     box_index: u32,
+    current_name: String,
+    new_name: String,
+    jonb_name: String,
+    image_index: usize,
 }
 
 impl Default for BoxesWindow {
@@ -58,6 +63,10 @@ impl Default for BoxesWindow {
             current_box: Default::default(),
             box_info: Default::default(),
             box_index: 0,
+            current_name: "".to_string(),
+            new_name: "".to_string(),
+            jonb_name: "".to_string(),
+            image_index: 0,
         }
     }
 }
@@ -80,6 +89,7 @@ impl BoxesWindow {
                         };
                     }
                     self.selected = name.to_string();
+                    self.current_name = "".to_string();
                 };
             }
         });
@@ -96,6 +106,18 @@ impl BoxesWindow {
         }
         ui.horizontal(|ui| {
             self.box_edit(ui, self.current_box);
+        });
+        ui.horizontal(|ui| {
+            self.create_jonb(ui);
+        });
+        ui.horizontal(|ui| {
+            self.rename_image(ui);
+        });
+        ui.horizontal(|ui| {
+            self.add_image(ui);
+        });
+        ui.horizontal(|ui| {
+            self.remove_image(ui);
         }).response
     }
 
@@ -319,6 +341,94 @@ impl BoxesWindow {
         let jonb = self.jonbins.get_mut(&self.selected).unwrap();
         jonb.hitboxes.pop();
     }
+  
+    fn rename_image(&mut self, ui: &mut egui::Ui)
+    {
+        if self.selected != "" {
+            let jonb = self.jonbins.get_mut(&self.selected).unwrap();
+            ui.horizontal(|ui| {
+                let mut index_str: String = self.image_index.to_string();
+                ui.label("Choose the image index!");
+                ui.text_edit_singleline(&mut index_str);
+                let prev_index = self.image_index;
+                self.image_index = match index_str.parse::<usize>() {
+                    Ok(index) => {
+                        if index != self.image_index
+                        {
+                            index
+                        }
+                        else {
+                            self.image_index
+                        }
+                    },
+                    Err(_) => return,
+                };
+                if jonb.names.len() > self.image_index {
+                    if prev_index != self.image_index || self.current_name == "".to_string() {
+                        self.current_name = jonb.names[self.image_index].clone();
+                    }
+                    ui.text_edit_singleline(&mut self.current_name);
+                    if ui.button("Confirm").clicked() && self.current_name.len() <= 32 && self.current_name != "" {
+                        jonb.names[0] = self.current_name.clone();
+                        self.current_name = "".to_string();
+                    }
+                    else if self.current_name.len() > 32
+                    {
+                        ui.label("Image name too long! Must be 32 characters or less.");
+                    }
+                    else if self.current_name == "" {
+                        ui.label("Please type an image name!");
+                    }
+                }
+                else {
+                    if jonb.names.len() > 0
+                    {
+                        ui.label(format!("Invalid image index! The last valid index is {}", jonb.names.len() - 1));
+                    }
+                    else {
+                        ui.label("This jonbin has no images!");
+                    }
+                }
+            });
+        }
+    }
+    
+    fn add_image(&mut self, ui: &mut egui::Ui)
+    {
+        if self.selected != "" {
+            let jonb = self.jonbins.get_mut(&self.selected).unwrap();
+            ui.horizontal(|ui| {
+                ui.label("Add an image!");
+                ui.text_edit_singleline(&mut self.new_name);
+                if ui.button("Confirm").clicked() && self.new_name.len() <= 32 && self.new_name != "" {
+                    jonb.names.push(self.new_name.clone());
+                }
+                else if self.new_name.len() > 32
+                {
+                    ui.label("Image name too long! Must be 32 characters or less.");
+                }
+                else if self.new_name == "" {
+                    ui.label("Please type an image name!");
+                }
+            });
+        }
+    }
+    
+    fn remove_image(&mut self, ui: &mut egui::Ui)
+    {
+        if self.selected != "" {
+            let jonb = self.jonbins.get_mut(&self.selected).unwrap();
+            ui.horizontal(|ui| {
+                ui.label("Remove last image!");
+                if ui.button("Confirm").clicked() && jonb.names.len() > 0 {
+                    jonb.names.remove(jonb.names.len() - 1);
+                }
+                else if jonb.names.len() == 0 {
+                    ui.label("No images to remove!");
+                }
+            });
+        }
+    }
 
     pub fn open_file(&mut self, path: &PathBuf) -> bool {
         let pac = open_file(&path);
@@ -330,7 +440,7 @@ impl BoxesWindow {
         }
         false
     }
-    
+  
     fn read_pac(&mut self, path: &PathBuf, pac: GGSTPac) {
         let mut dir = temp_dir();
         dir.push("GGSTCollisionEditorRS");
@@ -384,6 +494,8 @@ impl BoxesWindow {
 
         let mut meta_reader = BufReader::new(File::open(self.path.join("meta.json"))?);
         let meta: MetaKind = serde_json::from_reader(&mut meta_reader)?;
+        let meta = self.add_jonb(meta);
+        let meta = self.sort_meta(meta);
         
         match meta {
             MetaKind::Pac(mut pac) => {
@@ -413,6 +525,34 @@ impl BoxesWindow {
         Ok(())
     }
 
+    fn sort_meta(&self, mut meta: MetaKind) -> MetaKind{
+        match meta {
+            MetaKind::Pac(ref mut pac) => {
+                pac.files.sort_by(|a, b| a.unknown.cmp(&b.unknown));
+                let mut index: u32 = 0;
+                for entry in &mut pac.files {
+                    entry.id = index;
+                    index += 1;
+                }
+            }
+        }
+        
+        meta
+    }
+
+    fn hash_names(&self, name: &str) -> u32
+    {
+        let mut new_name = "".to_string();
+        for name_char in name.as_bytes() {
+            new_name.push((*name_char as char).to_ascii_lowercase());
+        }
+        let mut result: u32 = 0;
+        for hash_char in new_name.as_bytes() {
+            result = (*hash_char as u32).wrapping_add(137_u32.wrapping_mul(result));
+        };
+        result
+    }
+    
     fn write_repacked_file(
         &mut self,
         path: &PathBuf,
@@ -445,7 +585,8 @@ impl BoxesWindow {
             };
             if file.is_file(){ 
                 let mut file_buf = Vec::new();
-                if let Err(e) = File::open(&file).and_then(|mut f| f.read_to_end(&mut file_buf)) {
+                if let Err(e) = File::open(&file)
+                .and_then(|mut f| f.read_to_end(&mut file_buf)) {
                     println!("Error reading file {}: {}", file.display(), e);
                     return;
                 };
@@ -459,19 +600,110 @@ impl BoxesWindow {
                     Err(_) => continue,
                 };
             }
+        };
+    }
+
+    pub fn create_jonb(&mut self, ui: &mut egui::Ui)
+    {
+        if self.selected != "" {
+            ui.horizontal(|ui| {
+                ui.label("Add a jonbin using the selected one as a base!");
+                ui.text_edit_singleline(&mut self.jonb_name);
+                if ui.button("Confirm").clicked() && self.jonb_name.len() <= 32 && self.jonb_name != "" && !self.jonbins.contains_key(&self.jonb_name){
+                    let jonbin = GGSTJonBin {
+                        names: self.jonbins.get(&self.selected).unwrap().names.clone(),
+                        version: 277,
+                        editor_data: self.jonbins.get(&self.selected).unwrap().editor_data.clone(),
+                        hurtboxes: self.jonbins.get(&self.selected).unwrap().hurtboxes.clone(),
+                        hitboxes: self.jonbins.get(&self.selected).unwrap().hitboxes.clone(),
+                        unk_boxes: self.jonbins.get(&self.selected).unwrap().unk_boxes.clone(),
+                    };
+                    self.jonbins.insert(self.jonb_name.clone(), jonbin);
+                    self.selected = self.jonb_name.clone();
+                    self.write_jonb().expect("Failed to write jonbin!");
+                }
+                else if self.jonb_name.len() > 32
+                {
+                    ui.label("Jonbin name too long! Must be 32 characters or less.");
+                }
+                else if self.jonb_name == "" {
+                    ui.label("Please type a jonbin name!");
+                }
+                else if self.jonbins.contains_key(&self.jonb_name) {
+                    ui.label("A jonbin with that name already exists!");
+                }
+            });
         }
     }
 
+    fn add_jonb(&mut self, mut meta: MetaKind) -> MetaKind
+    {
+        let paths = match std::fs::read_dir(&self.path)
+        {
+            Ok(paths) => paths,
+            Err(_) => return meta,
+        };
+        match meta {
+            MetaKind::Pac(ref mut pac) => {
+                'outer: for path in paths {
+                    let file = match path{
+                        Ok(path) => path.path(),
+                        Err(_) => continue,
+                    };
+                    if file.is_file(){ 
+                        let name = file.file_name().unwrap()
+                        .to_str()
+                        .unwrap();
+                        if name != "meta.json"
+                        {
+                            for entry in &pac.files {
+                                if name == entry.name {
+                                    continue 'outer;
+                                }
+                                else {
+                                    continue
+                                }
+                            }
+                            let mut file_buf = Vec::new();
+                            if let Err(e) = File::open(&file).
+                            and_then(|mut f| f.read_to_end(&mut file_buf)) {
+                                println!("Error reading file {}: {}", file.display(), e);
+                                continue;
+                            };
+                            
+                            let last_file = &pac.files.last().unwrap();
+
+                            let new_file = GGSTPacEntry {
+                                unknown: self.hash_names(name),
+                                id: last_file.id + 1,
+                                name: name.to_string(),
+                                contents: file_buf,
+                            };
+
+                            pac.files.push(new_file)
+                        }
+                    }
+                }
+            }                        
+        };
+        meta
+    }
+
     fn write_jonb(&self) -> AResult<()>{
-        let write_path = self.path.join(&self.selected);
-        let bytes = GGSTJonBin::to_bytes(self.jonbins.get(&self.selected).unwrap());
-        if write_path.exists() {
-            println!(
-                "{} is being overwritten!",
-                write_path.file_name().unwrap().to_string_lossy()
-            )
-        }
-        File::create(write_path)?.write_all(&bytes)?;
+        if self.selected != ""
+        {
+            let write_path = self.path.join(&self.selected);
+            let bytes = GGSTJonBin::to_bytes(
+                self.jonbins.get(&self.selected).unwrap()
+            );
+            if write_path.exists() {
+                println!(
+                    "{} is being overwritten!",
+                    write_path.file_name().unwrap().to_string_lossy()
+                )
+            }
+            File::create(write_path)?.write_all(&bytes)?;
+        };
         Ok(())
     }
 }
