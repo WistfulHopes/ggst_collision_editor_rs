@@ -134,6 +134,12 @@ impl MyApp {
             }
             if ui.button("Add hitbox").clicked() {
                 self.boxes_window.add_hitbox();
+            }            
+            if ui.button("Remove hurtbox").clicked() {
+                self.boxes_window.remove_hurtbox();
+            }
+            if ui.button("Remove hitbox").clicked() {
+                self.boxes_window.remove_hitbox();
             }
         });
         ui.menu_button("SubMenu", |ui| {

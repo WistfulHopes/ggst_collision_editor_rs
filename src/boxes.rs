@@ -308,6 +308,18 @@ impl BoxesWindow {
         jonb.hitboxes.push(hitbox);
     }
 
+    pub fn remove_hurtbox(&mut self)
+    {
+        let jonb = self.jonbins.get_mut(&self.selected).unwrap();
+        jonb.hurtboxes.pop();
+    }
+
+    pub fn remove_hitbox(&mut self)
+    {
+        let jonb = self.jonbins.get_mut(&self.selected).unwrap();
+        jonb.hitboxes.pop();
+    }
+
     pub fn open_file(&mut self, path: &PathBuf) -> bool {
         let pac = open_file(&path);
         if let Result::Ok(pac) = pac {
