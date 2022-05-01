@@ -1,0 +1,3 @@
+[submodule "arcsys"]
+	path = arcsys
+	url = https://github.com/WistfulHopes/arcsys.git
