@@ -1,0 +1,45 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'ggst_collision_editor_rs'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=ggst_collision_editor_rs",
+                    "--package=ggst_collision_editor_rs"
+                ],
+                "filter": {
+                    "name": "ggst_collision_editor_rs",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'ggst_collision_editor_rs'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=ggst_collision_editor_rs",
+                    "--package=ggst_collision_editor_rs"
+                ],
+                "filter": {
+                    "name": "ggst_collision_editor_rs",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
