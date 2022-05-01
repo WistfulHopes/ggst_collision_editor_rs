@@ -108,7 +108,7 @@ impl MyApp {
         }
     }
     fn nested_menus(&mut self, ui: &mut egui::Ui) {
-        if ui.button("Open...").clicked() {
+        if ui.button("Open").clicked() {
             if let Some(path) = rfd::FileDialog::new()
             .add_filter("PAC File", &["pac"])
             .pick_file() {
@@ -117,7 +117,7 @@ impl MyApp {
             };
             ui.close_menu();
         }
-        if ui.button("Save...").clicked() {
+        if ui.button("Save").clicked() {
             if !self.boxes_window.jonbins.is_empty() {
                 if let Some(path) = rfd::FileDialog::new()
                 .add_filter("PAC File", &["pac"])
@@ -128,22 +128,12 @@ impl MyApp {
                 ui.close_menu();    
             }
         }
-        ui.menu_button("SubMenu", |ui| {
-            ui.menu_button("SubMenu", |ui| {
-                if ui.button("Open...").clicked() {
-                    ui.close_menu();
-                }
-                let _ = ui.button("Item");
-            });
-            ui.menu_button("SubMenu", |ui| {
-                if ui.button("Open...").clicked() {
-                    ui.close_menu();
-                }
-                let _ = ui.button("Item");
-            });
-            let _ = ui.button("Item");
-            if ui.button("Open...").clicked() {
-                ui.close_menu();
+        ui.menu_button("Modify boxes", |ui| {
+            if ui.button("Add hurtbox").clicked() {
+                self.boxes_window.add_hurtbox();
+            }
+            if ui.button("Add hitbox").clicked() {
+                self.boxes_window.add_hitbox();
             }
         });
         ui.menu_button("SubMenu", |ui| {

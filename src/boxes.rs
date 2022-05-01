@@ -246,10 +246,10 @@ impl BoxesWindow {
                 hurtbox.rect.height = self.current_box.unwrap().rect.height;
             }
             painter.rect(
-                Rect { min: Pos2{x: (hurtbox.rect.x_offset - hurtbox.rect.width / 2.0 + self.offset_x ), 
-                    y: (hurtbox.rect.y_offset - hurtbox.rect.height / 2.0 + self.offset_y)}, 
-                    max: Pos2{x: (hurtbox.rect.x_offset + hurtbox.rect.width / 2.0 + self.offset_x ), 
-                    y: (hurtbox.rect.y_offset + hurtbox.rect.height / 2.0 + self.offset_y)} },
+                Rect { min: Pos2{x: (hurtbox.rect.x_offset + self.offset_x ), 
+                    y: (hurtbox.rect.y_offset + self.offset_y)}, 
+                    max: Pos2{x: (hurtbox.rect.x_offset + hurtbox.rect.width + self.offset_x ), 
+                    y: (hurtbox.rect.y_offset + hurtbox.rect.height + self.offset_y)} },
                 0.0, 
                 faded_color(Color32::DARK_GREEN),
                 Stroke{width: 3.0, color: Color32::GREEN},
@@ -268,10 +268,10 @@ impl BoxesWindow {
                 hitbox.rect.height = self.current_box.unwrap().rect.height;
             }
             painter.rect(
-                Rect { min: Pos2{x: (hitbox.rect.x_offset - hitbox.rect.width / 2.0 + self.offset_x ), 
-                    y: (hitbox.rect.y_offset - hitbox.rect.height / 2.0 + self.offset_y)}, 
-                    max: Pos2{x: (hitbox.rect.x_offset + hitbox.rect.width / 2.0 + self.offset_x ), 
-                    y: (hitbox.rect.y_offset + hitbox.rect.height / 2.0 + self.offset_y)} },
+                Rect { min: Pos2{x: (hitbox.rect.x_offset + self.offset_x ), 
+                    y: (hitbox.rect.y_offset + self.offset_y)}, 
+                    max: Pos2{x: (hitbox.rect.x_offset + hitbox.rect.width + self.offset_x ), 
+                    y: (hitbox.rect.y_offset + hitbox.rect.height + self.offset_y)} },
                 0.0, 
                 faded_color(Color32::RED),
                 Stroke{width: 3.0, color: Color32::DARK_RED},
@@ -292,6 +292,20 @@ impl BoxesWindow {
         self.current_box = Default::default();
         self.box_info = Default::default();
         self.box_index = 0;
+    }
+
+    pub fn add_hurtbox(&mut self)
+    {
+        let jonb = self.jonbins.get_mut(&self.selected).unwrap();
+        let hurtbox = HitBox {kind: 0, rect: arcsys::ggst::jonbin::Rect {x_offset: 0.0, y_offset: 0.0, width: 0.0, height: 0.0}};
+        jonb.hurtboxes.push(hurtbox);
+    }
+
+    pub fn add_hitbox(&mut self)
+    {
+        let jonb = self.jonbins.get_mut(&self.selected).unwrap();
+        let hitbox = HitBox {kind: 1, rect: arcsys::ggst::jonbin::Rect {x_offset: 0.0, y_offset: 0.0, width: 0.0, height: 0.0}};
+        jonb.hitboxes.push(hitbox);
     }
 
     pub fn open_file(&mut self, path: &PathBuf) -> bool {
