@@ -18,7 +18,7 @@ fn main() -> AResult<()> {
 
     let options = eframe::NativeOptions {
         drag_and_drop_support: true,
-        icon_data: Some(eframe::epi::IconData {
+        icon_data: Some(eframe::IconData {
             rgba: icon.into_raw(),
             width: icon_width,
             height: icon_height,
@@ -48,8 +48,11 @@ impl eframe::App for MyApp {
                 ui.menu_button("File", |ui| {
                     self.file_menu(ui)
                 });
-                ui.menu_button("Modify boxes", |ui| {
+                ui.menu_button("Modify Boxes", |ui| {
                     self.modify_menu(ui)
+                });
+                ui.menu_button("Settings", |ui| {
+                    self.settings(ui)
                 });
                 let mut visuals = ui.ctx().style().visuals.clone();
                 visuals.light_dark_radio_buttons(ui);
@@ -143,7 +146,6 @@ impl MyApp {
                 .add_filter("PAC File", &["pac"])
                 .save_file() {
                     self.boxes_window.write_pac(&path).expect("Failed to save file!");
-                    self.picked_path = Some(path.display().to_string());
                 };
                 ui.close_menu();    
             }
@@ -166,5 +168,8 @@ impl MyApp {
             self.boxes_window.remove_hitbox();
             ui.close_menu();    
         }
+    }
+    fn settings(&mut self, ui: &mut egui::Ui) {
+        ui.checkbox(&mut self.boxes_window.is_gbvs, "Granblue Fantasy Versus");
     }
 }

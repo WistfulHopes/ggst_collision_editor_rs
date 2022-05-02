@@ -1,6 +1,6 @@
 use core::panic;
 use std::{path::{PathBuf, Path}, env::temp_dir, fs::{File, self, create_dir_all}, io::{Write, Read, BufReader}};
-use arcsys::ggst::{pac::{GGSTPac, GGSTPacEntry}, jonbin::{GGSTJonBin, HitBox}};
+use arcsys::{ggst::{pac::{GGSTPac, GGSTPacEntry}, jonbin::{GGSTJonBin, HitBox}}};
 use eframe::{egui::{self, Response, ComboBox, Sense, Frame}, emath::{Rect, Pos2}, epaint::{Color32, Stroke}};
 use serde::{Serialize, Deserialize};
 use serde_json;
@@ -47,6 +47,7 @@ pub struct BoxesWindow {
     new_name: String,
     jonb_name: String,
     image_index: usize,
+    pub is_gbvs: bool,
 }
 
 impl Default for BoxesWindow {
@@ -66,6 +67,7 @@ impl Default for BoxesWindow {
             new_name: "".to_string(),
             jonb_name: "".to_string(),
             image_index: 0,
+            is_gbvs: false,
         }
     }
 }
@@ -124,40 +126,44 @@ Right click to reset to the original position.");
 
     fn box_list(&mut self, ui: &mut egui::Ui) {
         let jonb = self.jonbins.get(&self.selected).unwrap();
-        let mut index = 0;
+        let mut hurt_index = 0;
+        let mut hit_index = 0;
         ui.horizontal(|ui| {
             ComboBox::from_label("Box list")
             .selected_text(format!("{} #{}", self.boxtype, self.box_index))
             .width(150.0)
             .show_ui(ui, |ui| {
-                for hurtbox in &jonb.hurtboxes {
-                    index += 1;
-                    if ui.selectable_label(true, format!("Hurtbox #{}", index))
-                    .clicked()
-                    {
-                        self.box_index = index;
-                        self.boxtype = format!("Hurtbox");
-                        self.box_info.x = format!("{}", hurtbox.rect.x_offset);
-                        self.box_info.y = format!("{}", hurtbox.rect.y_offset);
-                        self.box_info.w = format!("{}", hurtbox.rect.width);
-                        self.box_info.h = format!("{}", hurtbox.rect.height);
-                        self.current_box = Some(*hurtbox);
-                    };
-                }
-                index = 0;
-                for hitbox in &jonb.hitboxes {
-                    index += 1;
-                    if ui.selectable_label(true, format!("Hitbox #{}", index))
-                    .clicked()
-                    {
-                        self.box_index = index;
-                        self.boxtype = format!("Hitbox");
-                        self.box_info.x = format!("{}", hitbox.rect.x_offset);
-                        self.box_info.y = format!("{}", hitbox.rect.y_offset);
-                        self.box_info.w = format!("{}", hitbox.rect.width);
-                        self.box_info.h = format!("{}", hitbox.rect.height);
-                        self.current_box = Some(*hitbox);
-                    };
+                for boxgroup in &jonb.boxes {
+                    for hitbox in boxgroup {
+                        if hitbox.kind == 0 {
+                            hurt_index += 1;
+                            if ui.selectable_label(true, format!("Hurtbox #{}", hurt_index))
+                            .clicked()
+                            {
+                                self.box_index = hurt_index;
+                                self.boxtype = format!("Hurtbox");
+                                self.box_info.x = format!("{}", hitbox.rect.x_offset);
+                                self.box_info.y = format!("{}", hitbox.rect.y_offset);
+                                self.box_info.w = format!("{}", hitbox.rect.width);
+                                self.box_info.h = format!("{}", hitbox.rect.height);
+                                self.current_box = Some(*hitbox);
+                            };    
+                        }
+                        if hitbox.kind == 1 {
+                            hit_index += 1;
+                            if ui.selectable_label(true, format!("Hitbox #{}", hit_index))
+                            .clicked()
+                            {
+                                self.box_index = hit_index;
+                                self.boxtype = format!("Hitbox");
+                                self.box_info.x = format!("{}", hitbox.rect.x_offset);
+                                self.box_info.y = format!("{}", hitbox.rect.y_offset);
+                                self.box_info.w = format!("{}", hitbox.rect.width);
+                                self.box_info.h = format!("{}", hitbox.rect.height);
+                                self.current_box = Some(*hitbox);
+                            };    
+                        }    
+                    }
                 }
             });
         });
@@ -259,46 +265,48 @@ Right click to reset to the original position.");
 
         let mut index = 0;
 
-        for mut hurtbox in &mut jonb.hurtboxes {
-            index += 1;
-            if self.box_index == index && self.boxtype == format!("Hurtbox")
-            {
-                hurtbox.rect.x_offset = self.current_box.unwrap().rect.x_offset;
-                hurtbox.rect.y_offset = self.current_box.unwrap().rect.y_offset;
-                hurtbox.rect.width = self.current_box.unwrap().rect.width;
-                hurtbox.rect.height = self.current_box.unwrap().rect.height;
+        for boxgroup in &mut jonb.boxes {
+            for mut hitbox in boxgroup {
+                if hitbox.kind == 0 {
+                    index += 1;
+                    if self.box_index == index && self.boxtype == format!("Hurtbox")
+                    {
+                        hitbox.rect.x_offset = self.current_box.unwrap().rect.x_offset;
+                        hitbox.rect.y_offset = self.current_box.unwrap().rect.y_offset;
+                        hitbox.rect.width = self.current_box.unwrap().rect.width;
+                        hitbox.rect.height = self.current_box.unwrap().rect.height;
+                    }
+                    painter.rect(
+                        Rect { min: Pos2{x: (hitbox.rect.x_offset + self.offset_x ), 
+                            y: (hitbox.rect.y_offset + self.offset_y)}, 
+                            max: Pos2{x: (hitbox.rect.x_offset + hitbox.rect.width + self.offset_x ), 
+                            y: (hitbox.rect.y_offset + hitbox.rect.height + self.offset_y)} },
+                        0.0, 
+                        faded_color(Color32::DARK_GREEN),
+                        Stroke{width: 3.0, color: Color32::GREEN},
+                    );
+                }
+                index = 0;
+                if hitbox.kind == 1 {
+                    index += 1;
+                    if self.box_index == index && self.boxtype == format!("Hitbox")
+                    {
+                        hitbox.rect.x_offset = self.current_box.unwrap().rect.x_offset;
+                        hitbox.rect.y_offset = self.current_box.unwrap().rect.y_offset;
+                        hitbox.rect.width = self.current_box.unwrap().rect.width;
+                        hitbox.rect.height = self.current_box.unwrap().rect.height;
+                    }
+                    painter.rect(
+                        Rect { min: Pos2{x: (hitbox.rect.x_offset + self.offset_x ), 
+                            y: (hitbox.rect.y_offset + self.offset_y)}, 
+                            max: Pos2{x: (hitbox.rect.x_offset + hitbox.rect.width + self.offset_x ), 
+                            y: (hitbox.rect.y_offset + hitbox.rect.height + self.offset_y)} },
+                        0.0, 
+                        faded_color(Color32::RED),
+                        Stroke{width: 3.0, color: Color32::RED},
+                    );     
+                }    
             }
-            painter.rect(
-                Rect { min: Pos2{x: (hurtbox.rect.x_offset + self.offset_x ), 
-                    y: (hurtbox.rect.y_offset + self.offset_y)}, 
-                    max: Pos2{x: (hurtbox.rect.x_offset + hurtbox.rect.width + self.offset_x ), 
-                    y: (hurtbox.rect.y_offset + hurtbox.rect.height + self.offset_y)} },
-                0.0, 
-                faded_color(Color32::DARK_GREEN),
-                Stroke{width: 3.0, color: Color32::GREEN},
-            );
-        }
-
-        index = 0;
-        
-        for mut hitbox in &mut jonb.hitboxes {
-            index += 1;
-            if self.box_index == index && self.boxtype == format!("Hitbox")
-            {
-                hitbox.rect.x_offset = self.current_box.unwrap().rect.x_offset;
-                hitbox.rect.y_offset = self.current_box.unwrap().rect.y_offset;
-                hitbox.rect.width = self.current_box.unwrap().rect.width;
-                hitbox.rect.height = self.current_box.unwrap().rect.height;
-            }
-            painter.rect(
-                Rect { min: Pos2{x: (hitbox.rect.x_offset + self.offset_x ), 
-                    y: (hitbox.rect.y_offset + self.offset_y)}, 
-                    max: Pos2{x: (hitbox.rect.x_offset + hitbox.rect.width + self.offset_x ), 
-                    y: (hitbox.rect.y_offset + hitbox.rect.height + self.offset_y)} },
-                0.0, 
-                faded_color(Color32::RED),
-                Stroke{width: 3.0, color: Color32::DARK_RED},
-            );
         }
         response
     }
@@ -322,8 +330,14 @@ Right click to reset to the original position.");
         if self.selected != ""
         {
             let jonb = self.jonbins.get_mut(&self.selected).unwrap();
-            let hurtbox = HitBox {kind: 0, rect: arcsys::ggst::jonbin::Rect {x_offset: 0.0, y_offset: 0.0, width: 0.0, height: 0.0}};
-            jonb.hurtboxes.push(hurtbox);    
+            if !self.is_gbvs {
+                let hurtbox = HitBox {kind: 0, rect: arcsys::ggst::jonbin::Rect {x_offset: 0.0, y_offset: 0.0, width: 0.0, height: 0.0}, extra: None};
+                jonb.boxes[0].push(hurtbox);
+            }
+            else {
+                let hurtbox = HitBox {kind: 0, rect: arcsys::ggst::jonbin::Rect {x_offset: 0.0, y_offset: 0.0, width: 0.0, height: 0.0}, extra: Some(0)};
+                jonb.boxes[0].push(hurtbox);
+            }
         }
     }
 
@@ -332,8 +346,14 @@ Right click to reset to the original position.");
         if self.selected != ""
         {
             let jonb = self.jonbins.get_mut(&self.selected).unwrap();
-            let hitbox = HitBox {kind: 1, rect: arcsys::ggst::jonbin::Rect {x_offset: 0.0, y_offset: 0.0, width: 0.0, height: 0.0}};
-            jonb.hitboxes.push(hitbox);
+            if !self.is_gbvs {
+                let hitbox = HitBox {kind: 1, rect: arcsys::ggst::jonbin::Rect {x_offset: 0.0, y_offset: 0.0, width: 0.0, height: 0.0}, extra: None};
+                jonb.boxes[1].push(hitbox);
+            }
+            else {
+                let hitbox = HitBox {kind: 1, rect: arcsys::ggst::jonbin::Rect {x_offset: 0.0, y_offset: 0.0, width: 0.0, height: 0.0}, extra: Some(0)};
+                jonb.boxes[1].push(hitbox);
+            }
         }
     }
 
@@ -342,7 +362,15 @@ Right click to reset to the original position.");
         if self.selected != ""
         {
             let jonb = self.jonbins.get_mut(&self.selected).unwrap();
-            jonb.hurtboxes.pop();
+            let box_group = &mut jonb.boxes[0];
+            let mut index = box_group.len();
+            for hurtbox in box_group.iter().rev() {
+                index -= 1;
+                if hurtbox.kind == 0 {
+                    box_group.remove(index);
+                    break
+                }
+            }
         }
     }
 
@@ -351,7 +379,15 @@ Right click to reset to the original position.");
         if self.selected != ""
         {
             let jonb = self.jonbins.get_mut(&self.selected).unwrap();
-            jonb.hitboxes.pop();
+            let box_group = &mut jonb.boxes[1];
+            let mut index = box_group.len();
+            for hitbox in box_group.iter().rev() {
+                index -= 1;
+                if hitbox.kind == 1 {
+                    box_group.remove(index);
+                    break
+                }
+            }    
         }
     }
   
@@ -596,7 +632,7 @@ Right click to reset to the original position.");
                 Ok(path) => path.path(),
                 Err(_) => continue,
             };
-            if file.is_file(){ 
+            if file.is_file() && file.file_stem().unwrap().to_str().unwrap().to_string() != "meta" { 
                 let mut file_buf = Vec::new();
                 if let Err(e) = File::open(&file)
                 .and_then(|mut f| f.read_to_end(&mut file_buf)) {
@@ -604,13 +640,15 @@ Right click to reset to the original position.");
                     return;
                 };
                 let byte_buf = file_buf.as_slice();
-                match GGSTJonBin::parse(byte_buf){
+                match GGSTJonBin::parse(byte_buf, self.is_gbvs){
                     Ok(jonb) => {
                         let filename = file.file_stem().unwrap();
                         self.jonbins.insert(filename.to_str().unwrap().to_string(),
                     jonb);
                     },
-                    Err(_) => continue,
+                    Err(e) => {
+                        println!("Error reading file {}: {}", file.file_stem().unwrap().to_str().unwrap().to_string(), e);
+                        continue},
                 };
             }
         };
@@ -625,11 +663,9 @@ Right click to reset to the original position.");
                 if ui.button("Confirm").clicked() && self.jonb_name.len() <= 32 && self.jonb_name != "" && !self.jonbins.contains_key(&self.jonb_name){
                     let jonbin = GGSTJonBin {
                         names: self.jonbins.get(&self.selected).unwrap().names.clone(),
-                        version: 277,
+                        version: self.jonbins.get(&self.selected).unwrap().version.clone(),
                         editor_data: self.jonbins.get(&self.selected).unwrap().editor_data.clone(),
-                        hurtboxes: self.jonbins.get(&self.selected).unwrap().hurtboxes.clone(),
-                        hitboxes: self.jonbins.get(&self.selected).unwrap().hitboxes.clone(),
-                        unk_boxes: self.jonbins.get(&self.selected).unwrap().unk_boxes.clone(),
+                        boxes: self.jonbins.get(&self.selected).unwrap().boxes.clone(),
                     };
                     self.jonbins.insert(self.jonb_name.clone(), jonbin);
                     self.selected = self.jonb_name.clone();
