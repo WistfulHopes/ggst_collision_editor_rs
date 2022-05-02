@@ -231,13 +231,6 @@ Right click to reset to the original position.");
     }
 
     fn render_boxes(&mut self, ui: &mut egui::Ui) -> Response {
-        let dark_mode = ui.visuals().dark_mode; 
-        let faded_color = ui.visuals().window_fill();
-        let faded_color = |color: Color32| -> Color32 {
-            use egui::Rgba;
-            let t = if dark_mode { 0.95 } else { 0.8 };
-            egui::lerp(Rgba::from(color)..=Rgba::from(faded_color), t).into()
-        };
         let jonb = self.jonbins.get_mut(&self.selected).unwrap();
         let (mut response, painter) = ui.allocate_painter(
             eframe::emath::Vec2 {
@@ -280,13 +273,12 @@ Right click to reset to the original position.");
                         hitbox.rect.width = self.current_box.unwrap().rect.width;
                         hitbox.rect.height = self.current_box.unwrap().rect.height;
                     }
-                    painter.rect(
+                    painter.rect_stroke(
                         Rect { min: Pos2{x: (hitbox.rect.x_offset + self.offset_x ), 
                             y: (hitbox.rect.y_offset + self.offset_y)}, 
                             max: Pos2{x: (hitbox.rect.x_offset + hitbox.rect.width + self.offset_x ), 
                             y: (hitbox.rect.y_offset + hitbox.rect.height + self.offset_y)} },
                         0.0, 
-                        faded_color(Color32::DARK_GREEN),
                         Stroke{width: 3.0, color: Color32::GREEN},
                     );
                 }
@@ -299,13 +291,12 @@ Right click to reset to the original position.");
                         hitbox.rect.width = self.current_box.unwrap().rect.width;
                         hitbox.rect.height = self.current_box.unwrap().rect.height;
                     }
-                    painter.rect(
+                    painter.rect_stroke(
                         Rect { min: Pos2{x: (hitbox.rect.x_offset + self.offset_x ), 
                             y: (hitbox.rect.y_offset + self.offset_y)}, 
                             max: Pos2{x: (hitbox.rect.x_offset + hitbox.rect.width + self.offset_x ), 
                             y: (hitbox.rect.y_offset + hitbox.rect.height + self.offset_y)} },
                         0.0, 
-                        faded_color(Color32::RED),
                         Stroke{width: 3.0, color: Color32::RED},
                     );
                 }    
