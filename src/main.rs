@@ -51,6 +51,9 @@ impl eframe::App for MyApp {
                 ui.menu_button("Modify boxes", |ui| {
                     self.modify_menu(ui)
                 });
+                let mut visuals = ui.ctx().style().visuals.clone();
+                visuals.light_dark_radio_buttons(ui);
+                ui.ctx().set_visuals(visuals);
             });    
 
             ui.label("Open from the File menu, or drag-and-drop the file here.");
@@ -163,5 +166,5 @@ impl MyApp {
             self.boxes_window.remove_hitbox();
             ui.close_menu();    
         }
-}
+    }
 }
