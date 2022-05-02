@@ -27,7 +27,7 @@ fn main() -> AResult<()> {
         ..Default::default()
     };
     eframe::run_native(
-        "GGST Collision Editor Rust v3.0",
+        "GGST Collision Editor Rust v3.1",
         options,
         Box::new(|_cc| Box::new(MyApp::default())),
     );

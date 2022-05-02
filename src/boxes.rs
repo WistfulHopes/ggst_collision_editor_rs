@@ -89,6 +89,9 @@ impl BoxesWindow {
                             Err(e) => panic!("Could not write jonbin! {}", e)
                         };
                     }
+                    self.current_box = None;
+                    self.box_index = 0;
+                    self.boxtype = "".to_string();
                     self.selected = name.to_string();
                     self.current_name = "".to_string();
                 };
@@ -147,7 +150,7 @@ Right click to reset to the original position.");
                                 self.box_info.w = format!("{}", hitbox.rect.width);
                                 self.box_info.h = format!("{}", hitbox.rect.height);
                                 self.current_box = Some(*hitbox);
-                            };    
+                            };
                         }
                         if hitbox.kind == 1 {
                             hit_index += 1;
