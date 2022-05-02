@@ -789,7 +789,7 @@ dependencies = [
 
 [[package]]
 name = "ggst_collision_editor_rs"
-version = "0.1.0"
+version = "3.0.0"
 dependencies = [
  "anyhow",
  "arcsys",
