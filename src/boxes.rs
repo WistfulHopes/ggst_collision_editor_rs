@@ -263,13 +263,14 @@ Right click to reset to the original position.");
             self.offset_y = 802.0;
         }
 
-        let mut index = 0;
+        let mut hurt_index = 0;
+        let mut hit_index = 0;
 
         for boxgroup in &mut jonb.boxes {
             for mut hitbox in boxgroup {
                 if hitbox.kind == 0 {
-                    index += 1;
-                    if self.box_index == index && self.boxtype == format!("Hurtbox")
+                    hurt_index += 1;
+                    if self.box_index == hurt_index && self.boxtype == format!("Hurtbox")
                     {
                         hitbox.rect.x_offset = self.current_box.unwrap().rect.x_offset;
                         hitbox.rect.y_offset = self.current_box.unwrap().rect.y_offset;
@@ -286,10 +287,9 @@ Right click to reset to the original position.");
                         Stroke{width: 3.0, color: Color32::GREEN},
                     );
                 }
-                index = 0;
                 if hitbox.kind == 1 {
-                    index += 1;
-                    if self.box_index == index && self.boxtype == format!("Hitbox")
+                    hit_index += 1;
+                    if self.box_index == hit_index && self.boxtype == format!("Hitbox")
                     {
                         hitbox.rect.x_offset = self.current_box.unwrap().rect.x_offset;
                         hitbox.rect.y_offset = self.current_box.unwrap().rect.y_offset;
@@ -304,7 +304,7 @@ Right click to reset to the original position.");
                         0.0, 
                         faded_color(Color32::RED),
                         Stroke{width: 3.0, color: Color32::RED},
-                    );     
+                    );
                 }    
             }
         }
