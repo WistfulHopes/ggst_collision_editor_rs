@@ -83,7 +83,7 @@ dependencies = [
 [[package]]
 name = "arcsys"
 version = "0.4.0"
-source = "git+https://github.com/WistfulHopes/arcsys.git#ea4aad73621ae8a4f0a630a3f51466d67068da06"
+source = "git+https://github.com/WistfulHopes/arcsys.git#a35e85fd491acd0a4e212665bb40f9f097ff5c36"
 dependencies = [
  "binrw",
  "byteorder",
