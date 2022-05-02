@@ -3,17 +3,31 @@
 mod open;
 mod boxes;
 
+use anyhow::Result as AResult;
+
 use boxes::BoxesWindow;
 use eframe::{egui::{self}, emath::Vec2};
+use image::{DynamicImage};
 
-fn main() {
+fn main() -> AResult<()> {
+    let icon = match image::open("Strive.png") {
+        Ok(icon) => icon.to_rgba8(),
+        Err(_) => DynamicImage::new_rgba8(256, 256).to_rgba8(),
+    };
+    let (icon_width, icon_height) = icon.dimensions();
+
     let options = eframe::NativeOptions {
         drag_and_drop_support: true,
+        icon_data: Some(eframe::epi::IconData {
+            rgba: icon.into_raw(),
+            width: icon_width,
+            height: icon_height,
+        }),
         initial_window_size: Some(Vec2{x: 1280.0, y: 720.0}),
         ..Default::default()
     };
     eframe::run_native(
-        "GGST Collision Editor Rust (alpha)",
+        "GGST Collision Editor Rust v2.1",
         options,
         Box::new(|_cc| Box::new(MyApp::default())),
     );
@@ -32,7 +46,10 @@ impl eframe::App for MyApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.menu_button("File", |ui| {
-                    self.nested_menus(ui)
+                    self.file_menu(ui)
+                });
+                ui.menu_button("Modify boxes", |ui| {
+                    self.modify_menu(ui)
                 });
             });    
 
@@ -107,7 +124,7 @@ impl MyApp {
             self.dropped_files = ctx.input().raw.dropped_files.clone();
         }
     }
-    fn nested_menus(&mut self, ui: &mut egui::Ui) {
+    fn file_menu(&mut self, ui: &mut egui::Ui) {
         if ui.button("Open").clicked() {
             if let Some(path) = rfd::FileDialog::new()
             .add_filter("PAC File", &["pac"])
@@ -128,19 +145,23 @@ impl MyApp {
                 ui.close_menu();    
             }
         }
-        ui.menu_button("Modify boxes", |ui| {
-            if ui.button("Add hurtbox").clicked() {
-                self.boxes_window.add_hurtbox();
-            }
-            if ui.button("Add hitbox").clicked() {
-                self.boxes_window.add_hitbox();
-            }            
-            if ui.button("Remove hurtbox").clicked() {
-                self.boxes_window.remove_hurtbox();
-            }
-            if ui.button("Remove hitbox").clicked() {
-                self.boxes_window.remove_hitbox();
-            }
-        });
     }
+    fn modify_menu(&mut self, ui: &mut egui::Ui) {
+        if ui.button("Add hurtbox").clicked() {
+            self.boxes_window.add_hurtbox();
+            ui.close_menu();    
+        }
+        if ui.button("Add hitbox").clicked() {
+            self.boxes_window.add_hitbox();
+            ui.close_menu();    
+        }            
+        if ui.button("Remove hurtbox").clicked() {
+            self.boxes_window.remove_hurtbox();
+            ui.close_menu();    
+        }
+        if ui.button("Remove hitbox").clicked() {
+            self.boxes_window.remove_hitbox();
+            ui.close_menu();    
+        }
+}
 }

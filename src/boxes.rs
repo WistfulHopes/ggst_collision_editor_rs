@@ -16,7 +16,6 @@ struct Box {
     h: String,
 }
 
-
 #[derive(Serialize, Deserialize)]
 enum MetaKind {
     Pac(GGSTPac),
@@ -95,6 +94,8 @@ impl BoxesWindow {
         });
         if self.selected != ""{
             self.box_list(ui);
+            ui.label("You can click and drag the canvas to move around!
+Right click to reset to the original position.");
             Frame::canvas(ui.style()).show(ui, |ui| {
                 self.render_boxes(ui);
             });
@@ -318,28 +319,40 @@ impl BoxesWindow {
 
     pub fn add_hurtbox(&mut self)
     {
-        let jonb = self.jonbins.get_mut(&self.selected).unwrap();
-        let hurtbox = HitBox {kind: 0, rect: arcsys::ggst::jonbin::Rect {x_offset: 0.0, y_offset: 0.0, width: 0.0, height: 0.0}};
-        jonb.hurtboxes.push(hurtbox);
+        if self.selected != ""
+        {
+            let jonb = self.jonbins.get_mut(&self.selected).unwrap();
+            let hurtbox = HitBox {kind: 0, rect: arcsys::ggst::jonbin::Rect {x_offset: 0.0, y_offset: 0.0, width: 0.0, height: 0.0}};
+            jonb.hurtboxes.push(hurtbox);    
+        }
     }
 
     pub fn add_hitbox(&mut self)
     {
-        let jonb = self.jonbins.get_mut(&self.selected).unwrap();
-        let hitbox = HitBox {kind: 1, rect: arcsys::ggst::jonbin::Rect {x_offset: 0.0, y_offset: 0.0, width: 0.0, height: 0.0}};
-        jonb.hitboxes.push(hitbox);
+        if self.selected != ""
+        {
+            let jonb = self.jonbins.get_mut(&self.selected).unwrap();
+            let hitbox = HitBox {kind: 1, rect: arcsys::ggst::jonbin::Rect {x_offset: 0.0, y_offset: 0.0, width: 0.0, height: 0.0}};
+            jonb.hitboxes.push(hitbox);
+        }
     }
 
     pub fn remove_hurtbox(&mut self)
     {
-        let jonb = self.jonbins.get_mut(&self.selected).unwrap();
-        jonb.hurtboxes.pop();
+        if self.selected != ""
+        {
+            let jonb = self.jonbins.get_mut(&self.selected).unwrap();
+            jonb.hurtboxes.pop();
+        }
     }
 
     pub fn remove_hitbox(&mut self)
     {
-        let jonb = self.jonbins.get_mut(&self.selected).unwrap();
-        jonb.hitboxes.pop();
+        if self.selected != ""
+        {
+            let jonb = self.jonbins.get_mut(&self.selected).unwrap();
+            jonb.hitboxes.pop();
+        }
     }
   
     fn rename_image(&mut self, ui: &mut egui::Ui)
